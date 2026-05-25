@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "solo-cu"
+version = "0.1.0"
+description = "Computer Use MCP Server for Windows — AI-powered desktop automation via MCP protocol"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]>=1.0.0",
+    "openai>=1.0.0",
+    "httpx>=0.27.0",
+    "pyautogui>=0.9.0",
+    "pygetwindow>=0.0.9",
+    "pyperclip>=1.8.0",
+    "pywin32>=306; platform_system == 'Windows'",
+    "pywinauto>=0.6.8; platform_system == 'Windows'",
+    "Pillow>=10.0.0",
+    "playwright>=1.40.0",
+    "screeninfo>=0.8.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[project.scripts]
+solo-cu = "solo_cu.mcp_server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
