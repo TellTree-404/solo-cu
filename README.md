@@ -47,7 +47,7 @@ codex mcp add solo-cu -- python -m solo_cu.mcp_server
 
 Configure as a stdio MCP server — see `config.example.json` for the template.
 
-## Tools (24 total)
+## Tools (26 total)
 
 | Tool | Description |
 |------|-------------|
@@ -73,7 +73,9 @@ Configure as a stdio MCP server — see `config.example.json` for the template.
 | `computer_screenshot` | Take fresh screenshot |
 | `browser_open` | Open a visible Chromium page via Playwright |
 | `browser_locate` | Locate DOM elements with Playwright |
+| `browser_snapshot` | Read page URL/title, focused element, inputs, and buttons |
 | `browser_act` | Click/fill/type/press/read via DOM locators |
+| `browser_submit_prompt` | Fill, submit, and verify a web chat prompt |
 | `browser_close` | Close the active Playwright browser session |
 
 ## How It Works
@@ -116,7 +118,9 @@ fallbacks, but new configs should use `VISION_*`.
 - `pyautogui.FAILSAFE = True` — move mouse to any corner to abort
 - All coordinates validated and clamped to screen bounds
 - Prefer UIA/DOM locators before mouse coordinates
-- Browser automation should use Playwright DOM locators first
+- Browser automation should use Playwright DOM locators first. For chat-style
+  pages, prefer `browser_submit_prompt` because it verifies that the prompt was
+  submitted instead of assuming a click worked.
 - Native Windows apps should use UI Automation first
 - Screenshot, vision, and raw mouse coordinates are fallbacks, not the primary path
 - `screen_describe_window` returns window-relative pixels; convert them to

@@ -8,14 +8,20 @@ AGENT_RULES = """
 ## Computer Use and Browser Use Efficiency Rules
 
 ### 1. Prefer structured automation over coordinates
-For web pages, use `browser_open`, `browser_locate`, and `browser_act` with
-DOM locators first. For native Windows apps, call `computer_observe`,
-`computer_uia_tree`, or `computer_locate` before using mouse coordinates.
+For web pages, use `browser_open`, `browser_snapshot`, `browser_locate`,
+`browser_act`, and `browser_submit_prompt` with DOM locators first. For native
+Windows apps, call `computer_observe`, `computer_uia_tree`, or
+`computer_locate` before using mouse coordinates.
 
 ### 2. Use screenshots and vision as fallbacks
 Use `screen_describe` or `screen_describe_window` only when UIA/DOM cannot
 identify the target. Treat vision coordinates as suggestions that need
 confirmation, not as the sole authority for risky clicks.
+
+For browser chat pages, never infer that a message was sent from a screenshot
+alone. Use `browser_submit_prompt` or check the DOM directly. If the prompt
+still contains the submitted text, treat the send as failed unless another DOM
+postcondition proves the message was submitted.
 
 ### 3. Focus and verify the target window
 Call `computer_focus_window(title)` before native app actions, then confirm

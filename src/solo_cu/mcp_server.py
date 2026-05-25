@@ -185,9 +185,32 @@ def _build_fastmcp():
         return _tools.browser_locate(selector)
 
     @mcp.tool()
+    def browser_snapshot() -> dict:
+        """Browser Snapshot: Read current page URL/title, focused element,
+        visible inputs, buttons, disabled state, and usable CSS selectors.
+        Use this before web actions when selector choice is uncertain."""
+        return _tools.browser_snapshot()
+
+    @mcp.tool()
     def browser_act(action: dict) -> dict:
         """Browser Act: Click, fill, type, press, or read text via DOM locators."""
         return _tools.browser_act(action)
+
+    @mcp.tool()
+    def browser_submit_prompt(
+        text: str,
+        input_selector: dict | None = None,
+        submit_selector: dict | None = None,
+        timeout_ms: int = 15000,
+    ) -> dict:
+        """Browser Submit Prompt: Fill a web prompt, submit it, and verify
+        success via DOM state. Prefer this over coordinates for chat pages."""
+        return _tools.browser_submit_prompt(
+            text,
+            input_selector,
+            submit_selector,
+            timeout_ms,
+        )
 
     @mcp.tool()
     def browser_close() -> dict:

@@ -288,9 +288,24 @@ def browser_locate(selector: dict) -> dict:
     return browser.locate(selector)
 
 
+def browser_snapshot() -> dict:
+    """Read the current browser page's DOM action surface."""
+    return browser.snapshot()
+
+
 def browser_act(action: dict) -> dict:
     """Run a browser DOM action with Playwright."""
     return browser.act(action)
+
+
+def browser_submit_prompt(
+    text: str,
+    input_selector: dict | None = None,
+    submit_selector: dict | None = None,
+    timeout_ms: int = 15000,
+) -> dict:
+    """Fill a web prompt, submit it, and verify that submission succeeded."""
+    return browser.submit_prompt(text, input_selector, submit_selector, timeout_ms)
 
 
 def browser_close() -> dict:

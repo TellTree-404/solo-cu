@@ -20,7 +20,7 @@ Initial experimental release.
 
 ### Verified
 
-- MCP tool discovery returns 24 tools.
+- MCP tool discovery returns 26 tools.
 - Basic screenshot and window observation work on Windows.
 - UIA tree inspection and non-ASCII text input work in Notepad.
 - Browser DOM automation works through Playwright.
@@ -41,3 +41,4 @@ Initial experimental release.
 - Made relative clicks and text entry refocus the last focused window.
 - Added configurable action delays and process DPI awareness.
 - Registered browser tools synchronously for broader MCP client compatibility.
+- Added DOM browser snapshots and verified prompt submission for web chat pages.
