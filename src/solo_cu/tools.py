@@ -70,6 +70,12 @@ def computer_click(x: int, y: int, button: str = "left") -> dict:
     return _action_result(f"click({x}, {y}, {button})")
 
 
+def computer_click_absolute(x: int, y: int, button: str = "left") -> dict:
+    """Click at absolute screen pixel coordinates."""
+    computer.click_absolute(x, y, button)
+    return _action_result(f"click_absolute({x}, {y}, {button})")
+
+
 def computer_double_click(x: int, y: int) -> dict:
     """Double-click at position (x,y) in the scaled coordinate space (1024x768)."""
     ss = _screen_cache or _current_screen()
@@ -148,13 +154,13 @@ def computer_focus_window(title: str) -> dict:
 
 
 def computer_click_relative(x_pct: float, y_pct: float) -> dict:
-    """Click inside the currently active window using percentage offsets.
+    """Click inside the last focused window using percentage offsets.
 
     Args:
         x_pct: 0.0–1.0, horizontal position relative to window width.
         y_pct: 0.0–1.0, vertical position relative to window height.
 
-    Must call computer_focus_window first to activate the target window.
+    Must call computer_focus_window first to cache and activate the target window.
     """
     computer.click_relative(x_pct, y_pct)
     return _action_result(f"click_relative({x_pct:.2f}, {y_pct:.2f})")
@@ -170,8 +176,7 @@ def screen_describe_window(title: str) -> str:
     """Focus a window, capture its content, and ask the vision model to describe it.
 
     Returns a description with coordinates relative to the window interior.
-    Use with the window bounds from computer_focus_window:
-        abs_x = window_left + coord_x, abs_y = window_top + coord_y
+    Use computer_click_absolute with window_left + coord_x and window_top + coord_y.
     """
     bounds = computer.focus_window(title)
     ss = _current_screen()
@@ -183,14 +188,14 @@ def screen_describe_window(title: str) -> str:
     except ValueError as e:
         return str(e)
 
-    x_scale = cropped.original_width / cropped.scaled_width if cropped.scaled_width else 1
-    y_scale = cropped.original_height / cropped.scaled_height if cropped.scaled_height else 1
-
     return (
         f"Window: left={bounds['left']} top={bounds['top']} "
         f"{cropped.original_width}x{cropped.original_height}\n"
         f"All coordinates below are in original window pixels. "
-        f"To click: use computer_click(abs_x=left+coord_x, abs_y=top+coord_y)\n\n"
+        f"To click: use computer_click_absolute("
+        f"x=left+coord_x, y=top+coord_y). "
+        f"Do not pass these absolute coordinates to computer_click, which uses "
+        f"the 1024x768 scaled screen space.\n\n"
         f"{desc}"
     )
 
@@ -273,21 +278,21 @@ def computer_act(action: dict) -> dict:
         return {"ok": False, "action": action, "error": str(e)}
 
 
-async def browser_open(url: str) -> dict:
+def browser_open(url: str) -> dict:
     """Open a visible Playwright Chromium page."""
-    return await browser.open_url(url)
+    return browser.open_url(url)
 
 
-async def browser_locate(selector: dict) -> dict:
+def browser_locate(selector: dict) -> dict:
     """Locate a browser DOM element with Playwright."""
-    return await browser.locate(selector)
+    return browser.locate(selector)
 
 
-async def browser_act(action: dict) -> dict:
+def browser_act(action: dict) -> dict:
     """Run a browser DOM action with Playwright."""
-    return await browser.act(action)
+    return browser.act(action)
 
 
-async def browser_close() -> dict:
+def browser_close() -> dict:
     """Close the active Playwright browser session."""
-    return await browser.close()
+    return browser.close()

@@ -7,6 +7,9 @@ from dataclasses import dataclass
 from PIL import ImageGrab
 
 from .config import TARGET_HEIGHT, TARGET_WIDTH
+from .dpi import ensure_dpi_awareness
+
+ensure_dpi_awareness()
 
 
 @dataclass

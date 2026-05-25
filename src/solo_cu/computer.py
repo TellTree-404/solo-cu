@@ -8,15 +8,22 @@ import pyperclip
 import win32con
 import win32gui
 
-from .config import PYAUTOGUI_FAILSAFE
+from .config import (
+    ACTION_DELAY,
+    FOCUS_SETTLE_DELAY,
+    PYAUTOGUI_FAILSAFE,
+    SETTLE_DELAY,
+    TYPE_PRE_DELAY,
+)
+from .dpi import ensure_dpi_awareness
 from .screen import scale_to_original
 
+ensure_dpi_awareness()
 pyautogui.FAILSAFE = PYAUTOGUI_FAILSAFE
 
 logger = logging.getLogger(__name__)
 
-_ACTION_DELAY = 0.3
-_SETTLE_DELAY = 0.5
+_last_focused_window: dict | None = None
 
 
 def _ensure_original(
@@ -29,40 +36,42 @@ def click(x: int, y: int, orig_w: int, orig_h: int, button: str = "left") -> Non
     ox, oy = _ensure_original(x, y, orig_w, orig_h)
     logger.info("click %s at (%d, %d) [orig %d, %d]", button, x, y, ox, oy)
     pyautogui.click(ox, oy, button=button)
-    time.sleep(_SETTLE_DELAY)
+    time.sleep(SETTLE_DELAY)
 
 
 def click_absolute(x: int, y: int, button: str = "left") -> None:
     """Click absolute screen pixels. Use only after structured locators."""
     logger.info("click_absolute %s at (%d, %d)", button, x, y)
     pyautogui.click(x, y, button=button)
-    time.sleep(_SETTLE_DELAY)
+    time.sleep(SETTLE_DELAY)
 
 
 def double_click(x: int, y: int, orig_w: int, orig_h: int) -> None:
     ox, oy = _ensure_original(x, y, orig_w, orig_h)
     logger.info("double_click at (%d, %d) [orig %d, %d]", x, y, ox, oy)
     pyautogui.doubleClick(ox, oy)
-    time.sleep(_SETTLE_DELAY)
+    time.sleep(SETTLE_DELAY)
 
 
 def move_to(x: int, y: int, orig_w: int, orig_h: int) -> None:
     ox, oy = _ensure_original(x, y, orig_w, orig_h)
     logger.info("move_to (%d, %d) [orig %d, %d]", x, y, ox, oy)
     pyautogui.moveTo(ox, oy)
-    time.sleep(_SETTLE_DELAY)
+    time.sleep(SETTLE_DELAY)
 
 
 def type_text(text: str) -> None:
     logger.info("type_text %r", text)
+    refocus_last_window()
+    time.sleep(TYPE_PRE_DELAY)
     # Non-ASCII text is pasted through the clipboard.
     if any(ord(c) > 127 for c in text):
         pyperclip.copy(text)
         time.sleep(0.1)
         pyautogui.hotkey("ctrl", "v")
     else:
-        pyautogui.write(text, interval=_ACTION_DELAY / len(text) if text else 0)
-    time.sleep(_SETTLE_DELAY)
+        pyautogui.write(text, interval=ACTION_DELAY / len(text) if text else 0)
+    time.sleep(SETTLE_DELAY)
 
 
 def key_press(key: str) -> None:
@@ -72,20 +81,20 @@ def key_press(key: str) -> None:
         pyautogui.hotkey(*parts)
     else:
         pyautogui.press(key)
-    time.sleep(_SETTLE_DELAY)
+    time.sleep(SETTLE_DELAY)
 
 
 def hotkey(*keys: str) -> None:
     logger.info("hotkey %s", keys)
     pyautogui.hotkey(*keys)
-    time.sleep(_SETTLE_DELAY)
+    time.sleep(SETTLE_DELAY)
 
 
 def scroll(direction: str, amount: int = 3) -> None:
     delta = amount if direction in ("up", "left") else -amount
     logger.info("scroll %s x %d", direction, amount)
     pyautogui.scroll(delta)
-    time.sleep(_SETTLE_DELAY)
+    time.sleep(SETTLE_DELAY)
 
 
 def drag(
@@ -99,7 +108,7 @@ def drag(
     )
     pyautogui.moveTo(ox1, oy1)
     pyautogui.drag(ox2 - ox1, oy2 - oy1, duration=0.5)
-    time.sleep(_SETTLE_DELAY)
+    time.sleep(SETTLE_DELAY)
 
 
 # ── Window management (win32gui — reliable HWND-level coordinates) ─
@@ -182,6 +191,8 @@ def focus_window(title: str) -> dict:
 
     Returns {left, top, width, height} in screen pixels.
     """
+    global _last_focused_window
+
     logger.info("focus_window %r", title)
     hwnd = _find_hwnd(title)
 
@@ -189,7 +200,7 @@ def focus_window(title: str) -> dict:
     if win32gui.IsIconic(hwnd):
         win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
     win32gui.SetForegroundWindow(hwnd)
-    time.sleep(0.6)
+    time.sleep(FOCUS_SETTLE_DELAY)
 
     left, top, right, bottom = win32gui.GetWindowRect(hwnd)
     w = right - left
@@ -198,7 +209,7 @@ def focus_window(title: str) -> dict:
     # validate — retry once if garbage
     if w < 100 or h < 100 or left < -5000:
         logger.warning("focus_window got garbage: %d,%d %dx%d — retrying", left, top, w, h)
-        time.sleep(0.5)
+        time.sleep(SETTLE_DELAY)
         left, top, right, bottom = win32gui.GetWindowRect(hwnd)
         w = right - left
         h = bottom - top
@@ -209,7 +220,7 @@ def focus_window(title: str) -> dict:
         )
 
     logger.info("focus_window result: left=%d top=%d w=%d h=%d", left, top, w, h)
-    return {
+    _last_focused_window = {
         "hwnd": hwnd,
         "title": win32gui.GetWindowText(hwnd),
         "class_name": win32gui.GetClassName(hwnd),
@@ -218,6 +229,43 @@ def focus_window(title: str) -> dict:
         "width": w,
         "height": h,
     }
+    return dict(_last_focused_window)
+
+
+def refocus_last_window() -> dict | None:
+    """Bring the last focused window back before follow-up actions."""
+    if not _last_focused_window:
+        return None
+
+    hwnd = int(_last_focused_window["hwnd"])
+    if not win32gui.IsWindow(hwnd) or not win32gui.IsWindowVisible(hwnd):
+        raise RuntimeError("Last focused window is no longer available")
+
+    if win32gui.IsIconic(hwnd):
+        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+
+    active = win32gui.GetForegroundWindow()
+    if active != hwnd:
+        logger.info(
+            "refocus_last_window %r from active %r",
+            _last_focused_window.get("title"),
+            win32gui.GetWindowText(active),
+        )
+        win32gui.SetForegroundWindow(hwnd)
+        time.sleep(FOCUS_SETTLE_DELAY)
+
+    left, top, right, bottom = win32gui.GetWindowRect(hwnd)
+    _last_focused_window.update(
+        {
+            "title": win32gui.GetWindowText(hwnd),
+            "class_name": win32gui.GetClassName(hwnd),
+            "left": left,
+            "top": top,
+            "width": right - left,
+            "height": bottom - top,
+        }
+    )
+    return dict(_last_focused_window)
 
 
 def _get_active_hwnd_bounds() -> tuple[int, int, int, int]:
@@ -228,15 +276,22 @@ def _get_active_hwnd_bounds() -> tuple[int, int, int, int]:
 
 
 def click_relative(x_pct: float, y_pct: float) -> None:
-    """Click inside the currently active window using percentage offsets."""
-    left, top, w, h = _get_active_hwnd_bounds()
+    """Click inside the last focused window using percentage offsets."""
+    focused = refocus_last_window()
+    if focused:
+        left = int(focused["left"])
+        top = int(focused["top"])
+        w = int(focused["width"])
+        h = int(focused["height"])
+    else:
+        left, top, w, h = _get_active_hwnd_bounds()
     if w < 50 or h < 50:
-        raise RuntimeError(f"Active window too small: {w}x{h}")
+        raise RuntimeError(f"Target window too small: {w}x{h}")
     abs_x = left + int(w * x_pct)
     abs_y = top + int(h * y_pct)
     logger.info("click_relative %.2f,%.2f → abs (%d,%d)", x_pct, y_pct, abs_x, abs_y)
     pyautogui.click(abs_x, abs_y)
-    time.sleep(_SETTLE_DELAY)
+    time.sleep(SETTLE_DELAY)
 
 
 def minimize_window(title: str) -> None:
@@ -247,4 +302,4 @@ def minimize_window(title: str) -> None:
         win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
     except RuntimeError:
         pass
-    time.sleep(_SETTLE_DELAY)
+    time.sleep(SETTLE_DELAY)

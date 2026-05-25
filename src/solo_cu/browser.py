@@ -2,14 +2,42 @@
 
 from __future__ import annotations
 
+import asyncio
+import threading
 from typing import Any
 
 from .config import BROWSER_CHANNEL, BROWSER_HEADLESS
 
+_loop: asyncio.AbstractEventLoop | None = None
+_thread: threading.Thread | None = None
 _playwright: Any = None
 _browser: Any = None
 _context: Any = None
 _page: Any = None
+
+
+def _ensure_loop() -> asyncio.AbstractEventLoop:
+    global _loop, _thread
+    if _loop and _loop.is_running():
+        return _loop
+
+    ready = threading.Event()
+    _loop = asyncio.new_event_loop()
+
+    def _run() -> None:
+        asyncio.set_event_loop(_loop)
+        ready.set()
+        _loop.run_forever()
+
+    _thread = threading.Thread(target=_run, name="solo-cu-playwright", daemon=True)
+    _thread.start()
+    ready.wait(timeout=5)
+    return _loop
+
+
+def _run_async(coro: Any) -> Any:
+    loop = _ensure_loop()
+    return asyncio.run_coroutine_threadsafe(coro, loop).result()
 
 
 async def _ensure_page() -> Any:
@@ -72,13 +100,17 @@ def _locator(page: Any, selector: dict) -> Any:
     raise ValueError(f"Unsupported browser selector: {selector!r}")
 
 
-async def open_url(url: str, wait_until: str = "domcontentloaded") -> dict:
+async def _open_url_async(url: str, wait_until: str = "domcontentloaded") -> dict:
     page = await _ensure_page()
     await page.goto(url, wait_until=wait_until)
     return {"ok": True, "url": page.url, "title": await page.title()}
 
 
-async def locate(selector: dict) -> dict:
+def open_url(url: str, wait_until: str = "domcontentloaded") -> dict:
+    return _run_async(_open_url_async(url, wait_until))
+
+
+async def _locate_async(selector: dict) -> dict:
     try:
         page = await _ensure_page()
         loc = _locator(page, selector)
@@ -103,7 +135,11 @@ async def locate(selector: dict) -> dict:
         }
 
 
-async def act(action: dict) -> dict:
+def locate(selector: dict) -> dict:
+    return _run_async(_locate_async(selector))
+
+
+async def _act_async(action: dict) -> dict:
     """Run a DOM action. Supported types: click, fill, type, press, read_text."""
     try:
         page = await _ensure_page()
@@ -145,7 +181,11 @@ async def act(action: dict) -> dict:
         }
 
 
-async def close() -> dict:
+def act(action: dict) -> dict:
+    return _run_async(_act_async(action))
+
+
+async def _close_async() -> dict:
     """Close the Playwright browser session if one is open."""
     global _playwright, _browser, _context, _page
     try:
@@ -163,3 +203,7 @@ async def close() -> dict:
         _context = None
         _browser = None
         _playwright = None
+
+
+def close() -> dict:
+    return _run_async(_close_async())

@@ -24,8 +24,10 @@ Avoid clicking if the foreground window is not the intended app.
 
 ### 4. Prefer guarded actions
 Use `computer_act` with a UIA selector when possible. Use raw
-`computer_click`, `computer_click_relative`, or `computer_drag` only as
-low-level fallbacks after the target has been verified.
+`computer_click`, `computer_click_relative`, `computer_click_absolute`, or
+`computer_drag` only as low-level fallbacks after the target has been verified.
+If `screen_describe_window` returns window-relative coordinates, add the window
+left/top and call `computer_click_absolute`.
 
 ### 5. Keep multi-step desktop actions atomic
 Focus can change between MCP calls. For fragile app workflows, combine

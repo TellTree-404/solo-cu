@@ -88,6 +88,12 @@ def _build_fastmcp():
         return _tools.computer_click(x, y, button)
 
     @mcp.tool()
+    def computer_click_absolute(x: int, y: int, button: str = "left") -> dict:
+        """Click Absolute: Click at absolute screen pixel coordinates.
+        Use for coordinates from screen_describe_window after adding window left/top."""
+        return _tools.computer_click_absolute(x, y, button)
+
+    @mcp.tool()
     def computer_double_click(x: int, y: int) -> dict:
         """Double Click: Double-click at screen coordinates (1024x768 space).
         Returns a new screenshot."""
@@ -145,7 +151,7 @@ def _build_fastmcp():
 
     @mcp.tool()
     def computer_click_relative(x_pct: float, y_pct: float) -> dict:
-        """Click Relative: Click at percentage position inside the active window.
+        """Click Relative: Click at percentage position inside the last focused window.
         (0.35, 0.88) = 35% from left, 88% from top. Call focus_window first."""
         return _tools.computer_click_relative(x_pct, y_pct)
 
@@ -168,25 +174,25 @@ def _build_fastmcp():
         return _tools.screen_describe_window(title)
 
     @mcp.tool()
-    async def browser_open(url: str) -> dict:
+    def browser_open(url: str) -> dict:
         """Browser Open: Open a visible Chromium page via Playwright."""
-        return await _tools.browser_open(url)
+        return _tools.browser_open(url)
 
     @mcp.tool()
-    async def browser_locate(selector: dict) -> dict:
+    def browser_locate(selector: dict) -> dict:
         """Browser Locate: Find a DOM element via Playwright locators.
         Example: {'strategy':'role','role':'button','name':'Submit'}."""
-        return await _tools.browser_locate(selector)
+        return _tools.browser_locate(selector)
 
     @mcp.tool()
-    async def browser_act(action: dict) -> dict:
+    def browser_act(action: dict) -> dict:
         """Browser Act: Click, fill, type, press, or read text via DOM locators."""
-        return await _tools.browser_act(action)
+        return _tools.browser_act(action)
 
     @mcp.tool()
-    async def browser_close() -> dict:
+    def browser_close() -> dict:
         """Browser Close: Close the active Playwright browser session."""
-        return await _tools.browser_close()
+        return _tools.browser_close()
 
     return mcp
 

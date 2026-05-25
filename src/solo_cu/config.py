@@ -43,6 +43,10 @@ TARGET_HEIGHT = int(os.getenv("SOLO_CU_HEIGHT", "768"))
 # Safety
 MAX_STEPS_PER_TASK = int(os.getenv("SOLO_CU_MAX_STEPS", "25"))
 PYAUTOGUI_FAILSAFE = _env_bool("SOLO_CU_FAILSAFE", True)
+ACTION_DELAY = float(os.getenv("SOLO_CU_ACTION_DELAY", "0.3"))
+SETTLE_DELAY = float(os.getenv("SOLO_CU_SETTLE_DELAY", "0.8"))
+FOCUS_SETTLE_DELAY = float(os.getenv("SOLO_CU_FOCUS_SETTLE_DELAY", "0.6"))
+TYPE_PRE_DELAY = float(os.getenv("SOLO_CU_TYPE_PRE_DELAY", "0.15"))
 
 # Browser
 BROWSER_CHANNEL = os.getenv("SOLO_CU_BROWSER_CHANNEL", "")

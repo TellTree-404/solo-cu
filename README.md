@@ -47,7 +47,7 @@ codex mcp add solo-cu -- python -m solo_cu.mcp_server
 
 Configure as a stdio MCP server — see `config.example.json` for the template.
 
-## Tools (23 total)
+## Tools (24 total)
 
 | Tool | Description |
 |------|-------------|
@@ -59,6 +59,7 @@ Configure as a stdio MCP server — see `config.example.json` for the template.
 | `computer_locate` | Locate native controls with structured selectors |
 | `computer_act` | Guarded native action using selectors or fallback coordinates |
 | `computer_click` | Low-level click at scaled (x, y) |
+| `computer_click_absolute` | Low-level click at absolute screen pixels |
 | `computer_double_click` | Low-level double-click |
 | `computer_move` | Low-level cursor move |
 | `computer_type` | Type text, using clipboard paste for non-ASCII |
@@ -100,6 +101,10 @@ All coordinates use a 1024x768 scaled space (following Anthropic's best practice
 | `SOLO_CU_WIDTH` | `1024` | Target screenshot width |
 | `SOLO_CU_HEIGHT` | `768` | Target screenshot height |
 | `SOLO_CU_FAILSAFE` | `true` | Enable pyautogui corner abort |
+| `SOLO_CU_ACTION_DELAY` | `0.3` | Delay spread across ASCII typing |
+| `SOLO_CU_SETTLE_DELAY` | `0.8` | Delay after mouse/keyboard actions |
+| `SOLO_CU_FOCUS_SETTLE_DELAY` | `0.6` | Delay after bringing a window forward |
+| `SOLO_CU_TYPE_PRE_DELAY` | `0.15` | Delay before typing or clipboard paste |
 | `SOLO_CU_BROWSER_CHANNEL` | empty | Optional Playwright channel, e.g. `msedge` |
 | `SOLO_CU_BROWSER_HEADLESS` | `false` | Run Playwright browser without a visible window |
 
@@ -114,6 +119,8 @@ fallbacks, but new configs should use `VISION_*`.
 - Browser automation should use Playwright DOM locators first
 - Native Windows apps should use UI Automation first
 - Screenshot, vision, and raw mouse coordinates are fallbacks, not the primary path
+- `screen_describe_window` returns window-relative pixels; convert them to
+  absolute screen pixels and use `computer_click_absolute`
 - Recommend running in a VM for untrusted tasks
 - Never commit API keys to git
 
@@ -131,6 +138,8 @@ Git or under ignored folders such as `manual_tests/` and `backup/`.
 - Vision model coordinates are not trusted as the only source of truth.
 - Focus can move between MCP calls in desktop automation. Prefer guarded actions
   and app-specific atomic workflows for risky tasks.
+- Most MCP clients do not hot-reload tool definitions. Restart the client or MCP
+  server after upgrading solo-cu if new tools do not appear.
 - Messaging app automation is a validation scenario only. It is not guaranteed
   across client versions and should not be used for untrusted or irreversible
   actions without human confirmation.

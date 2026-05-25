@@ -14,12 +14,13 @@ Initial experimental release.
 - UIA-based native control locator and guarded native action helper.
 - Playwright-based browser tools for opening pages, locating DOM elements,
   acting on DOM locators, and closing browser sessions.
+- Absolute pixel click tool for window-relative vision coordinates.
 - Configurable OpenAI-compatible vision backend via `VISION_*` variables.
 - Safer defaults for pyautogui failsafe and browser launch fallback.
 
 ### Verified
 
-- MCP tool discovery returns 23 tools.
+- MCP tool discovery returns 24 tools.
 - Basic screenshot and window observation work on Windows.
 - UIA tree inspection and non-ASCII text input work in Notepad.
 - Browser DOM automation works through Playwright.
@@ -33,3 +34,10 @@ Initial experimental release.
 - Raw mouse coordinates remain sensitive to focus changes and window movement.
 - Browser bundled Chromium may require a separate Playwright runtime download;
   installed system Edge or Chrome can be used as fallback.
+
+### Fixed after initial publication
+
+- Corrected `screen_describe_window` click guidance to use absolute pixel clicks.
+- Made relative clicks and text entry refocus the last focused window.
+- Added configurable action delays and process DPI awareness.
+- Registered browser tools synchronously for broader MCP client compatibility.
